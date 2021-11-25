@@ -27,7 +27,6 @@ def welcome():
 		f'/api/v1.0/precipitation<br/>'
 		f'/api/v1.0/stations<br/>'
 		f'/api/v1.0/tobs<br/>'
-		f'/api/v1.0/<start><br/>'
 		f'/api/v1.0/<start>/<end>'
 		)
 
@@ -42,7 +41,7 @@ def precipitation():
 	prcp_all = []
 	for prcp, date in precip:
 		precipitation_dict = {}
-		precipitation_dict['prcp'] = precipitation
+		precipitation_dict['precipitation'] = prcp
 		precipitation_dict['date'] = date
 		prcp_all.append(precipitation_dict)
 
@@ -81,10 +80,39 @@ def tobs():
 
 	session.close()
 
-	return jsonify(temps)
+	return jsonify(temps_all)
+
+
+@app.route("/api/v1.0/<start>")
+def start(start):
+	session = Session(engine)
+
+	start_date = session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
+		filter(Measurement.date >= start).all()
+
+	start_date = list(np.ravel(start_date, order='C'))
+
+	session.close()
+	 
+	return jsonify(start_date)
+    
+   
 
 
 
+@app.route("/api/v1.0/<start>/<end>")
+def start_end(start, end):
+	session = Session(engine)
+
+	start_end_dates = session.query(func.min(Measurement.tobs), func.max(Measurement.tobs), func.avg(Measurement.tobs)).\
+		filter(Measurement.date >= start).\
+		filter(Measurement.date <= end).all()
+
+	start_end_dates = list(np.ravel(start_end_dates, order='C'))
+
+	session.close()
+
+	return jsonify(start_end_dates)
 
 if __name__ == '__main__':
     app.run(debug=True)
